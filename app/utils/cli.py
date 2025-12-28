@@ -25,12 +25,11 @@ def register_commands(app):
     
     @app.cli.command('rebuild-recs')
     def rebuild_recs():
-        """Rebuild TF-IDF recommendation cache."""
         from app.services.recommendations import rebuild_recommendation_cache
         click.echo('Rebuilding recommendation cache...')
         engine = rebuild_recommendation_cache()
-        click.echo(f'✓ Built model with {len(engine.book_ids)} books and {engine.tfidf_matrix.shape[1]} features')
-        click.echo('✓ Cache saved to disk')
+        click.echo('✓ Recommendation engine ready (genre/keyword matching)')
+        click.echo('✓ No cache file needed for simple recommendations')
     
     @app.cli.command('test-email')
     def test_email():

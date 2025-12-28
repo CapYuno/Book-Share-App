@@ -51,7 +51,7 @@ def get_recommendations(book_id):
         'recommendations': recommended_books,
         'count': len(recommended_books),
         'latency_ms': round(latency_ms, 2),
-        'algorithm': 'TF-IDF + Cosine Similarity'
+        'algorithm': 'Genre & Keyword Matching'
     })
 
 
@@ -96,7 +96,7 @@ def get_borrower_recommendations(borrower_id):
         'recommendations': recommended_books,
         'count': len(recommended_books),
         'latency_ms': round(latency_ms, 2),
-        'algorithm': 'TF-IDF + Cosine Similarity (History-Based)'
+        'algorithm': 'Genre & Keyword Matching (History-Based)'
     })
 
 
@@ -114,8 +114,7 @@ def rebuild_cache():
     
     return jsonify({
         'status': 'success',
-        'message': 'Recommendation cache rebuilt',
-        'num_books': len(engine.book_ids),
-        'num_features': engine.tfidf_matrix.shape[1] if engine.tfidf_matrix is not None else 0,
+        'message': 'Recommendation engine reinitialized',
+        'algorithm': 'Genre & Keyword Matching',
         'rebuild_time_ms': round(latency_ms, 2)
     })
