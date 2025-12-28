@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BookShare{% endblock %}</title>
+
+    <!-- Tailwind CSS from CDN for utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="nav-modern">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <a href="/" class="nav-brand">
+                    <i class="fas fa-book"></i>
+                    BookShare
+                </a>
+
+                <!-- Desktop Navigation -->
+                <div class="nav-links flex gap-2">
+                    <a href="/" class="nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="hidden md:inline">Dashboard</span>
+                    </a>
+                    <a href="/books" class="nav-link">
+                        <i class="fas fa-book-open"></i>
+                        <span class="hidden md:inline">Books</span>
+                    </a>
+                    <a href="/borrowers" class="nav-link">
+                        <i class="fas fa-users"></i>
+                        <span class="hidden md:inline">Borrowers</span>
+                    </a>
+                    <a href="/loans" class="nav-link">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span class="hidden md:inline">Loans</span>
+                    </a>
+                    <a href="/admin" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span class="hidden md:inline">Admin</span>
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu-button" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <a href="/" class="nav-brand">
+                <i class="fas fa-book"></i>
+                BookShare
+            </a>
+            <button class="mobile-menu-close" onclick="toggleMobileMenu()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mobile-menu-links">
+            <a href="/" class="mobile-menu-link">
+                <i class="fas fa-chart-line"></i>
+                Dashboard
+            </a>
+            <a href="/books" class="mobile-menu-link">
+                <i class="fas fa-book-open"></i>
+                Books
+            </a>
+            <a href="/borrowers" class="mobile-menu-link">
+                <i class="fas fa-users"></i>
+                Borrowers
+            </a>
+            <a href="/loans" class="mobile-menu-link">
+                <i class="fas fa-exchange-alt"></i>
+                Loans
+            </a>
+            <a href="/admin" class="mobile-menu-link">
+                <i class="fas fa-cog"></i>
+                Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container mx-auto px-4 mt-4">
+        {% for category, message in messages %}
+        <div class="flash-modern 
+                        {% if category == 'success' %}flash-success
+                        {% elif category == 'error' %}flash-error
+                        {% elif category == 'warning' %}flash-warning
+                        {% else %}flash-info{% endif %}">
+            <i
+                class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-modern">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2025 BookShare Library Management System - FYP Project</p>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+    </script>
+</body>
+
+</html>

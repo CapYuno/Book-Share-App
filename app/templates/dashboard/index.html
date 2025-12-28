@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BookShare{% endblock %}
+
+{% block content %}
+<div class="mb-8 fade-in">
+    <h1 class="text-4xl font-bold text-black mb-2">Dashboard</h1>
+    <p class="text-gray">Welcome to BookShare Library Management System</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Books -->
+    <div class="stat-card fade-in">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="stat-label">Total Books</p>
+                <p class="stat-value">{{ total_books }}</p>
+            </div>
+            <div class="stat-icon">
+                <i class="fas fa-book"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Borrowers -->
+    <div class="stat-card fade-in" style="animation-delay: 0.1s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="stat-label">Borrowers</p>
+                <p class="stat-value">{{ total_borrowers }}</p>
+            </div>
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Loans -->
+    <div class="stat-card fade-in" style="animation-delay: 0.2s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="stat-label">Active Loans</p>
+                <p class="stat-value">{{ active_loans }}</p>
+            </div>
+            <div class="stat-icon">
+                <i class="fas fa-bookmark"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overdue Loans -->
+    <div class="stat-card fade-in" style="animation-delay: 0.3s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="stat-label">Overdue</p>
+                <p class="stat-value">{{ overdue_loans }}</p>
+            </div>
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card-modern mb-8">
+    <h2 class="text-2xl font-bold text-black mb-6">Quick Actions</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/books/new" class="quick-action">
+            <p class="quick-action-content">
+                <i class="fas fa-plus-circle"></i>
+                Add New Book
+            </p>
+        </a>
+        <a href="/borrowers/new" class="quick-action">
+            <p class="quick-action-content">
+                <i class="fas fa-user-plus"></i>
+                Add New Borrower
+            </p>
+        </a>
+        <a href="/loans/new" class="quick-action">
+            <p class="quick-action-content">
+                <i class="fas fa-file-alt"></i>
+                Create Loan
+            </p>
+        </a>
+    </div>
+</div>
+
+<!-- AI Recommendations Placeholder -->
+<div class="ai-section">
+    <h2 class="text-2xl font-bold mb-2">
+        <i class="fas fa-robot"></i>
+        AI-Powered Recommendations
+    </h2>
+    <p class="mb-4">✅ <strong>Now Live!</strong> Get personalized book recommendations powered by TF-IDF machine
+        learning.</p>
+    <p class="text-gray-300">Visit any book detail page to see AI-generated recommendations based on content similarity.
+    </p>
+    <a href="/books/" class="btn-modern btn-secondary mt-4 inline-block">
+        <i class="fas fa-book-open"></i>
+        Browse Books
+    </a>
+</div>
+{% endblock %}

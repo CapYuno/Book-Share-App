@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Create Loan - BookShare{% endblock %}
+
+{% block extra_head %}
+<style>
+    .book-option,
+    .borrower-option {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .book-option:hover,
+    .borrower-option:hover {
+        transform: translateY(-2px);
+    }
+
+    .selected {
+        border-color: #000000 !important;
+        background-color: #f5f5f5 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="/loans" class="text-black hover:underline font-semibold">← Back to Loans</a>
+</div>
+
+<div class="bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">📝 Create New Loan</h1>
+
+    <form method="post" id="loan-form" class="space-y-8">
+        <!-- Step 1: Select Book -->
+        <div class="p-6 border-2 border-gray-300 rounded-lg bg-gray-50">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">1. Select Book</h2>
+
+            <input type="hidden" name="book_id" id="book_id" required>
+
+            <div class="mb-4">
+                <input type="text" id="book-search" placeholder="🔍 Search books..."
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black">
+            </div>
+
+            <div id="books-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                {% for book in books %}
+                <div class="book-option p-4 border-2 rounded-lg {{ 'border-gray-200' if book.is_available else 'border-gray-100 opacity-50' }}"
+                    data-book-id="{{ book.id }}" data-available="{{ 'true' if book.is_available else 'false' }}"
+                    data-title="{{ book.title|lower }}" data-author="{{ book.author|lower }}">
+                    <h3 class="font-bold text-gray-800">{{ book.title }}</h3>
+                    <p class="text-sm text-gray-600 mb-2">{{ book.author }}</p>
+                    {% if book.is_available %}
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓ Available</span>
+                    {% else %}
+                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">✗ On Loan</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div id="selected-book" class="mt-4 hidden">
+                <p class="text-sm text-black font-semibold">✓ Selected: <span id="selected-book-title"></span></p>
+            </div>
+        </div>
+
+        <!-- Step 2: Select Borrower -->
+        <div class="p-6 border-2 border-gray-300 rounded-lg bg-gray-50">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">2. Select Borrower</h2>
+
+            <input type="hidden" name="borrower_id" id="borrower_id" required>
+
+            <div class="mb-4">
+                <input type="text" id="borrower-search" placeholder="🔍 Search borrowers..."
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black">
+            </div>
+
+            <div id="borrowers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                {% for borrower in borrowers %}
+                <div class="borrower-option p-4 border-2 border-gray-200 rounded-lg"
+                    data-borrower-id="{{ borrower.id }}" data-name="{{ borrower.name|lower }}"
+                    data-email="{{ borrower.email|lower }}">
+                    <h3 class="font-bold text-gray-800">{{ borrower.name }}</h3>
+                    <p class="text-sm text-gray-600">{{ borrower.email }}</p>
+                    {% set active_loans = borrower.loans|selectattr('returned_at', 'none')|list|length %}
+                    <p class="text-xs text-gray-500 mt-1">Active loans: {{ active_loans }}</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div id="selected-borrower" class="mt-4 hidden">
+                <p class="text-sm text-black font-semibold">✓ Selected: <span id="selected-borrower-name"></span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Step 3: Loan Duration -->
+        <div class="p-6 border-2 border-gray-300 rounded-lg bg-gray-50">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">3. Set Due Date</h2>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="due_days" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Loan Duration (days)
+                    </label>
+                    <input type="number" id="due_days" name="due_days" value="14" min="1" max="90"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black">
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-gray-700 mb-2">Due Date</p>
+                    <p id="calculated-due-date" class="text-2xl font-bold text-black mt-3">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex gap-4">
+            <button type="submit" id="submit-btn" disabled
+                class="flex-1 bg-black text-white px-6 py-4 rounded-lg hover:bg-gray-800 transition font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                📖 Create Loan
+            </button>
+            <a href="/loans"
+                class="flex-1 text-center bg-white text-black border-2 border-black px-6 py-4 rounded-lg hover:bg-black hover:text-white transition font-semibold text-lg">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedBookId = null;
+    let selectedBorrowerId = null;
+
+    // Book selection
+    document.querySelectorAll('.book-option').forEach(option => {
+        if (option.dataset.available === 'true') {
+            option.addEventListener('click', () => {
+                // Deselect all
+                document.querySelectorAll('.book-option').forEach(opt => opt.classList.remove('selected'));
+
+                // Select this one
+                option.classList.add('selected');
+                selectedBookId = option.dataset.bookId;
+
+                document.getElementById('book_id').value = selectedBookId;
+                document.getElementById('selected-book-title').textContent = option.querySelector('h3').textContent;
+                document.getElementById('selected-book').classList.remove('hidden');
+
+                validateForm();
+            });
+        }
+    });
+
+    // Borrower selection
+    document.querySelectorAll('.borrower-option').forEach(option => {
+        option.addEventListener('click', () => {
+            // Deselect all
+            document.querySelectorAll('.borrower-option').forEach(opt => opt.classList.remove('selected'));
+
+            // Select this one
+            option.classList.add('selected');
+            selectedBorrowerId = option.dataset.borrowerId;
+
+            document.getElementById('borrower_id').value = selectedBorrowerId;
+            document.getElementById('selected-borrower-name').textContent = option.querySelector('h3').textContent;
+            document.getElementById('selected-borrower').classList.remove('hidden');
+
+            validateForm();
+        });
+    });
+
+    // Search functionality for books
+    document.getElementById('book-search').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        document.querySelectorAll('.book-option').forEach(option => {
+            const title = option.dataset.title;
+            const author = option.dataset.author;
+            if (title.includes(query) || author.includes(query)) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    });
+
+    // Search functionality for borrowers
+    document.getElementById('borrower-search').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        document.querySelectorAll('.borrower-option').forEach(option => {
+            const name = option.dataset.name;
+            const email = option.dataset.email;
+            if (name.includes(query) || email.includes(query)) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    });
+
+    // Calculate due date
+    document.getElementById('due_days').addEventListener('input', updateDueDate);
+
+    function updateDueDate() {
+        const days = parseInt(document.getElementById('due_days').value) || 14;
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + days);
+
+        document.getElementById('calculated-due-date').textContent = dueDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    function validateForm() {
+        const submitBtn = document.getElementById('submit-btn');
+        if (selectedBookId && selectedBorrowerId) {
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.disabled = true;
+        }
+    }
+
+    // Initialize
+    updateDueDate();
+</script>
+{% endblock %}

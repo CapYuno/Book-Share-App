@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - BookShare{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-black mb-2"><i class="fas fa-cog"></i> Admin Dashboard</h1>
+    <p class="text-gray">System management and maintenance</p>
+</div>
+
+<!-- System Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="stat-card">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <p class="stat-label">Total Books</p>
+                <p class="stat-value">{{ total_books }}</p>
+            </div>
+            <i class="fas fa-book stat-icon"></i>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <p class="stat-label">Total Borrowers</p>
+                <p class="stat-value">{{ total_borrowers }}</p>
+            </div>
+            <i class="fas fa-users stat-icon"></i>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <p class="stat-label">Active Loans</p>
+                <p class="stat-value">{{ active_loans }}</p>
+            </div>
+            <i class="fas fa-bookmark stat-icon"></i>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <p class="stat-label">Overdue</p>
+                <p class="stat-value">{{ overdue_loans }}</p>
+            </div>
+            <i class="fas fa-exclamation-triangle stat-icon"></i>
+        </div>
+    </div>
+</div>
+
+<!-- AI System Management -->
+<div class="ai-section mb-8">
+    <h2 class="text-2xl font-bold mb-4">
+        <i class="fas fa-robot"></i> AI Recommendation System
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+            <p class="text-gray-300 mb-2">
+                The recommendation engine uses TF-IDF to suggest similar books based on content.
+            </p>
+            <p class="text-sm text-gray-400">
+                Last rebuilt: <span class="font-semibold">Never (will build on first request)</span>
+            </p>
+        </div>
+        <div class="text-right">
+            <form method="post" action="/recommendations/rebuild" id="rebuild-form" class="inline">
+                <button type="submit" class="btn-modern btn-primary"
+                    onclick="return confirm('Rebuild recommendation cache? This may take a few seconds.')">
+                    <i class="fas fa-sync-alt"></i> Rebuild Cache
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="rebuild-result" class="hidden mt-4 p-4 bg-white text-black rounded-lg border border-gray-300">
+        <p class="text-sm" id="rebuild-message"></p>
+    </div>
+</div>
+
+<!-- Reminder System -->
+<div class="card-modern mb-8">
+    <h2 class="text-2xl font-bold mb-4">
+        <i class="fas fa-envelope"></i> Email Reminder System
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+            <p class="text-gray mb-2">
+                Automated email reminders for due and overdue books.
+            </p>
+            <p class="text-sm text-gray">
+                Status: <span class="font-semibold text-black"><i class="fas fa-check-circle"></i> Active (runs daily at
+                    9 AM)</span>
+            </p>
+            <p class="text-sm text-gray mt-1">
+                Reminders send {{ reminder_before }} days before due and {{ reminder_after }} days after overdue
+            </p>
+        </div>
+        <div class="text-right">
+            <form method="post" action="/admin/reminders/run">
+                <button type="submit" class="btn-modern btn-primary"
+                    onclick="return confirm('Send reminders now for all pending notifications?')">
+                    <i class="fas fa-paper-plane"></i> Send Reminders Now
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Data Management -->
+<div class="card-modern">
+    <h2 class="text-2xl font-bold text-black mb-6">
+        <i class="fas fa-database"></i> Data Management
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-6 border-2 border-gray-200 rounded-lg hover:border-black transition">
+            <h3 class="font-bold text-lg text-black mb-2">
+                <i class="fas fa-file-export"></i> Export Data
+            </h3>
+            <p class="text-sm text-gray mb-4">Export books, borrowers, and loans to CSV</p>
+            <div class="space-y-2">
+                <a href="/admin/export/books" class="btn-modern btn-primary w-full block text-center text-sm">
+                    <i class="fas fa-book"></i> Export Books
+                </a>
+                <a href="/admin/export/borrowers" class="btn-modern btn-secondary w-full block text-center text-sm">
+                    <i class="fas fa-users"></i> Export Borrowers
+                </a>
+                <a href="/admin/export/loans" class="btn-modern btn-ghost w-full block text-center text-sm">
+                    <i class="fas fa-exchange-alt"></i> Export Loans
+                </a>
+            </div>
+        </div>
+
+        <div class="p-6 border-2 border-gray-200 rounded-lg hover:border-black transition">
+            <h3 class="font-bold text-lg text-black mb-2">
+                <i class="fas fa-file-import"></i> Import Data
+            </h3>
+            <p class="text-sm text-gray mb-4">Bulk import books from CSV file</p>
+            <form method="post" action="/admin/import/books" enctype="multipart/form-data" class="space-y-3">
+                <input type="file" name="file" accept=".csv" required
+                    class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-black file:text-white hover:file:bg-gray-800">
+                <button type="submit" class="btn-modern btn-primary w-full text-sm">
+                    <i class="fas fa-upload"></i> Upload CSV
+                </button>
+            </form>
+            <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-info-circle"></i> CSV must have: Title, Author (required), ISBN, Genre, Year,
+                Description (optional)
+            </p>
+        </div>
+
+        <div class="p-6 border-2 border-gray-200 rounded-lg hover:border-indigo-300 transition">
+            <h3 class="font-bold text-lg text-gray-800 mb-2">🌱 Seed Data</h3>
+            <p class="text-sm text-gray-600 mb-4">Generate sample data for testing</p>
+            <p class="text-xs text-gray-500">Use CLI: <code class="bg-gray-100 px-2 py-1 rounded">flask seed-db</code>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle rebuild cache with AJAX
+    document.getElementById('rebuild-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const resultDiv = document.getElementById('rebuild-result');
+        const messageEl = document.getElementById('rebuild-message');
+
+        resultDiv.classList.remove('hidden');
+        messageEl.innerHTML = '⏳ Rebuilding cache, please wait...';
+
+        try {
+            const response = await fetch('/recommendations/rebuild', {
+                method: 'POST'
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                messageEl.innerHTML = `
+                ✅ <strong>Success!</strong> Rebuilt cache with ${data.num_books} books 
+                and ${data.num_features} features in ${data.rebuild_time_ms.toFixed(2)}ms
+            `;
+            } else {
+                messageEl.innerHTML = '❌ <strong>Error:</strong> Failed to rebuild cache';
+            }
+        } catch (error) {
+            messageEl.innerHTML = '❌ <strong>Error:</strong> ' + error.message;
+        }
+    });
+</script>
+{% endblock %}

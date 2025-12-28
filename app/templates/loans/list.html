@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Loans - BookShare{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-bold text-black mb-2">
+                <i class="fas fa-exchange-alt"></i> Loans
+            </h1>
+            <p class="text-gray">Manage book loans and returns</p>
+        </div>
+        <a href="/loans/new" class="btn-modern btn-primary">
+            <i class="fas fa-plus-circle"></i> Create Loan
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="mb-6 flex gap-3">
+    <a href="/loans?filter=active"
+        class="btn-modern {{ 'btn-primary' if filter_type == 'active' else 'btn-secondary' }}">
+        <i class="fas fa-book-open"></i> Active Loans
+    </a>
+    <a href="/loans?filter=overdue"
+        class="btn-modern {{ 'btn-primary' if filter_type == 'overdue' else 'btn-secondary' }}">
+        <i class="fas fa-exclamation-triangle"></i> Overdue
+    </a>
+    <a href="/loans?filter=returned"
+        class="btn-modern {{ 'btn-primary' if filter_type == 'returned' else 'btn-secondary' }}">
+        <i class="fas fa-check-circle"></i> Returned
+    </a>
+</div>
+
+<!-- Loans List -->
+<div class="table-wrapper">
+    <table class="table-modern">
+        <thead>
+            <tr>
+                <th><i class="fas fa-book"></i> Book</th>
+                <th><i class="fas fa-user"></i> Borrower</th>
+                <th><i class="fas fa-calendar-plus"></i> Loaned</th>
+                <th><i class="fas fa-calendar-check"></i> Due</th>
+                <th><i class="fas fa-info-circle"></i> Status</th>
+                <th><i class="fas fa-cog"></i> Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+            <tr>
+                <td>
+                    <a href="/books/{{ loan.book.id }}" class="font-semibold text-black hover:underline">
+                        {{ loan.book.title }}
+                    </a>
+                    <p class="text-sm text-gray">{{ loan.book.author }}</p>
+                </td>
+                <td>
+                    <a href="/borrowers/{{ loan.borrower.id }}" class="text-black hover:underline">
+                        {{ loan.borrower.name }}
+                    </a>
+                </td>
+                <td class="text-gray">
+                    {{ loan.loaned_at.strftime('%Y-%m-%d') }}
+                </td>
+                <td class="text-gray">
+                    {{ loan.due_at.strftime('%Y-%m-%d') }}
+                </td>
+                <td>
+                    {% if loan.returned_at %}
+                    <span class="badge-modern badge-available">
+                        <i class="fas fa-check-circle"></i> Returned
+                    </span>
+                    {% elif loan.is_overdue %}
+                    <span class="badge-modern badge-overdue">
+                        <i class="fas fa-exclamation-triangle"></i> Overdue
+                    </span>
+                    {% else %}
+                    <span class="badge-modern badge-borrowed">
+                        <i class="fas fa-book-open"></i> Active
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not loan.returned_at %}
+                    <form method="post" action="/loans/{{ loan.id }}/return" class="inline">
+                        <button type="submit" class="text-black hover:underline font-medium">
+                            <i class="fas fa-undo"></i> Mark Returned
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="text-gray">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="px-6 py-12 text-center">
+                    <p class="text-gray text-lg mb-4">No loans found</p>
+                    <a href="/loans/new" class="text-black hover:underline font-semibold">Create your first loan</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Summary Stats -->
+{% if loans %}
+<div class="mt-8 card-modern">
+    <p class="text-gray">
+        <i class="fas fa-info-circle"></i> Showing <strong class="text-black">{{ loans|length }}</strong> loan(s)
+        {% if filter_type == 'overdue' %}
+        that are <strong class="text-black">overdue</strong>
+        {% elif filter_type == 'active' %}
+        currently <strong class="text-black">active</strong>
+        {% elif filter_type == 'returned' %}
+        that have been <strong class="text-black">returned</strong>
+        {% endif %}
+    </p>
+</div>
+{% endif %}
+{% endblock %}

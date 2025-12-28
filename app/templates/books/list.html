@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Books - BookShare{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-4xl font-bold text-black mb-2">Books</h1>
+            <p class="text-gray">Browse and manage library inventory</p>
+        </div>
+        <a href="/books/new" class="btn-modern btn-primary">
+            <i class="fas fa-plus-circle"></i>
+            Add New Book
+        </a>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="mb-6">
+    <form method="get" action="/books" class="flex gap-4" id="searchForm">
+        <div class="flex-1 relative">
+            <input type="text" name="q" id="bookSearchInput" value="{{ query or '' }}"
+                placeholder="Search by title, author, ISBN, or genre..." class="form-input w-full" autocomplete="off">
+
+            <!-- Autocomplete Dropdown -->
+            <div id="autocompleteDropdown" class="autocomplete-dropdown hidden">
+                <!-- Search History Section -->
+                <div id="historySection" class="autocomplete-section hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold text-gray-500 uppercase">Recent Searches</span>
+                        <button type="button" id="clearHistoryBtn"
+                            class="text-xs text-blue-600 hover:text-blue-800">Clear</button>
+                    </div>
+                    <div id="historyItems"></div>
+                </div>
+
+                <!-- Search Results Section -->
+                <div id="resultsSection" class="autocomplete-section hidden">
+                    <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Suggested Books</div>
+                    <div id="resultItems"></div>
+                </div>
+
+                <!-- No Results Message -->
+                <div id="noResults" class="hidden text-center py-4 text-gray-500">
+                    No books found
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn-modern btn-primary">
+            <i class="fas fa-search"></i>
+            Search
+        </button>
+    </form>
+</div>
+
+<!-- Results Count -->
+<div class="mb-4">
+    <p class="text-gray">
+        {% if query %}
+        Found <strong>{{ books|length }}</strong> book(s) matching "<strong>{{ query }}</strong>"
+        {% else %}
+        Showing <strong>{{ books|length }}</strong> book(s)
+        {% endif %}
+    </p>
+</div>
+
+<!-- Books Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for book in books %}
+    <div class="card-modern">
+        <div class="flex justify-between items-start mb-3">
+            <h3 class="text-xl font-bold text-black flex-1">{{ book.title }}</h3>
+            {% if book.is_available %}
+            <span class="badge-modern badge-available">Available</span>
+            {% else %}
+            <span class="badge-modern badge-borrowed">On Loan</span>
+            {% endif %}
+        </div>
+
+        <p class="text-gray mb-2">
+            <i class="fas fa-user text-xs mr-2"></i>
+            <strong>Author:</strong> {{ book.author }}
+        </p>
+
+        {% if book.genre %}
+        <p class="text-gray mb-2">
+            <i class="fas fa-tag text-xs mr-2"></i>
+            <strong>Genre:</strong> {{ book.genre }}
+        </p>
+        {% endif %}
+
+        {% if book.year %}
+        <p class="text-gray mb-2">
+            <i class="fas fa-calendar text-xs mr-2"></i>
+            <strong>Year:</strong> {{ book.year }}
+        </p>
+        {% endif %}
+
+        {% if book.isbn %}
+        <p class="text-gray mb-4 text-sm">
+            <i class="fas fa-barcode text-xs mr-2"></i>
+            <strong>ISBN:</strong> {{ book.isbn }}
+        </p>
+        {% endif %}
+
+        <div class="flex gap-2 mt-4">
+            <a href="/books/{{ book.id }}" class="btn-modern btn-secondary flex-1 text-center">
+                View Details
+            </a>
+            <a href="/books/{{ book.id }}/edit" class="btn-modern btn-ghost">
+                <i class="fas fa-edit"></i>
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-span-3 text-center py-16">
+        <p class="text-gray text-lg mb-4">No books found</p>
+        {% if query %}
+        <a href="/books" class="text-black hover:underline font-semibold">Clear search</a>
+        {% else %}
+        <a href="/books/new" class="text-black hover:underline font-semibold">Add your first book</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Autocomplete functionality
+    (function () {
+        const searchInput = document.getElementById('bookSearchInput');
+        const dropdown = document.getElementById('autocompleteDropdown');
+        const historySection = document.getElementById('historySection');
+        const resultsSection = document.getElementById('resultsSection');
+        const historyItems = document.getElementById('historyItems');
+        const resultItems = document.getElementById('resultItems');
+        const noResults = document.getElementById('noResults');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const searchForm = document.getElementById('searchForm');
+
+        let debounceTimer;
+        let currentFocus = -1;
+        let currentResults = [];
+
+        // Debounced search function
+        function debounceSearch(value) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                performAutocomplete(value);
+            }, 300);
+        }
+
+        // Perform autocomplete API call
+        async function performAutocomplete(query) {
+            try {
+                const response = await fetch(`/books/api/autocomplete?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                displayAutocomplete(data, query);
+            } catch (error) {
+                console.error('Autocomplete error:', error);
+            }
+        }
+
+        // Display autocomplete results
+        function displayAutocomplete(data, query) {
+            currentFocus = -1;
+            currentResults = [];
+
+            // Clear previous content
+            historyItems.innerHTML = '';
+            resultItems.innerHTML = '';
+
+            // Hide all sections initially
+            historySection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            noResults.classList.add('hidden');
+
+            // Show history if available and no query
+            if (!query && data.history && data.history.length > 0) {
+                historySection.classList.remove('hidden');
+                data.history.forEach((searchTerm, index) => {
+                    const item = createHistoryItem(searchTerm, index);
+                    historyItems.appendChild(item);
+                    currentResults.push({ type: 'history', value: searchTerm });
+                });
+                dropdown.classList.remove('hidden');
+                return;
+            }
+
+            // Show results if available
+            if (data.results && data.results.length > 0) {
+                resultsSection.classList.remove('hidden');
+                data.results.forEach((book, index) => {
+                    const item = createResultItem(book, index + (data.history?.length || 0));
+                    resultItems.appendChild(item);
+                    currentResults.push({ type: 'result', value: book });
+                });
+                dropdown.classList.remove('hidden');
+            } else if (query) {
+                // Show no results message
+                noResults.classList.remove('hidden');
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        // Create history item
+        function createHistoryItem(searchTerm, index) {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item history-item';
+            div.setAttribute('data-index', index);
+            div.innerHTML = `
+            <i class="fas fa-history text-gray-400 mr-2"></i>
+            <span>${escapeHtml(searchTerm)}</span>
+        `;
+            div.addEventListener('click', () => {
+                searchInput.value = searchTerm;
+                searchForm.submit();
+            });
+            return div;
+        }
+
+        // Create result item
+        function createResultItem(book, index) {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item result-item';
+            div.setAttribute('data-index', index);
+
+            const availabilityBadge = book.is_available
+                ? '<span class="text-xs text-green-600 font-semibold">Available</span>'
+                : '<span class="text-xs text-gray-500">On Loan</span>';
+
+            div.innerHTML = `
+            <div class="flex-1">
+                <div class="font-semibold text-gray-900">${escapeHtml(book.title)}</div>
+                <div class="text-sm text-gray-600">
+                    ${escapeHtml(book.author)}${book.genre ? ' • ' + escapeHtml(book.genre) : ''}
+                </div>
+            </div>
+            ${availabilityBadge}
+        `;
+            div.addEventListener('click', () => {
+                window.location.href = `/books/${book.id}`;
+            });
+            return div;
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Remove active class from all items
+        function removeActiveClass() {
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+            items.forEach(item => item.classList.remove('active'));
+        }
+
+        // Add active class to item
+        function addActiveClass(index) {
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+            if (items[index]) {
+                removeActiveClass();
+                items[index].classList.add('active');
+                items[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        // Save search to history
+        async function saveToHistory(query) {
+            if (!query.trim()) return;
+
+            try {
+                await fetch('/books/api/history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: query.trim() })
+                });
+            } catch (error) {
+                console.error('Error saving history:', error);
+            }
+        }
+
+        // Clear search history
+        async function clearHistory() {
+            try {
+                await fetch('/books/api/history', {
+                    method: 'DELETE'
+                });
+                dropdown.classList.add('hidden');
+                searchInput.focus();
+            } catch (error) {
+                console.error('Error clearing history:', error);
+            }
+        }
+
+        // Event Listeners
+        searchInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            debounceSearch(value);
+        });
+
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value.trim()) {
+                debounceSearch(searchInput.value);
+            } else {
+                performAutocomplete('');
+            }
+        });
+
+        // Keyboard navigation
+        searchInput.addEventListener('keydown', (e) => {
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                currentFocus++;
+                if (currentFocus >= items.length) currentFocus = 0;
+                addActiveClass(currentFocus);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                currentFocus--;
+                if (currentFocus < 0) currentFocus = items.length - 1;
+                addActiveClass(currentFocus);
+            } else if (e.key === 'Enter') {
+                if (currentFocus > -1 && items[currentFocus]) {
+                    e.preventDefault();
+                    items[currentFocus].click();
+                } else {
+                    // Normal form submission
+                    saveToHistory(searchInput.value);
+                }
+            } else if (e.key === 'Escape') {
+                dropdown.classList.add('hidden');
+                currentFocus = -1;
+            }
+        });
+
+        // Form submission
+        searchForm.addEventListener('submit', () => {
+            saveToHistory(searchInput.value);
+        });
+
+        // Clear history button
+        clearHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            clearHistory();
+        });
+
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    })();
+</script>
+{% endblock %}

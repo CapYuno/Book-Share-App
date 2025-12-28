@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ borrower.name }} - BookShare{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="/borrowers" class="text-indigo-600 hover:underline">← Back to Borrowers</a>
+</div>
+
+<!-- Borrower Info Card -->
+<div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+    <div class="flex justify-between items-start mb-6">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">{{ borrower.name }}</h1>
+            <p class="text-lg text-gray-600">📧 {{ borrower.email }}</p>
+            {% if borrower.phone %}
+            <p class="text-lg text-gray-600">📱 {{ borrower.phone }}</p>
+            {% endif %}
+        </div>
+        <a href="/borrowers/{{ borrower.id }}/edit"
+            class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+            ✏️ Edit
+        </a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="grid grid-cols-3 gap-6 pt-6 border-t">
+        <div>
+            <p class="text-gray-500 text-sm font-semibold uppercase">Total Loans</p>
+            <p class="text-3xl font-bold text-gray-800 mt-1">{{ borrower.loans|length }}</p>
+        </div>
+        <div>
+            <p class="text-gray-500 text-sm font-semibold uppercase">Active Loans</p>
+            <p class="text-3xl font-bold text-blue-600 mt-1">
+                {{ borrower.loans|selectattr('returned_at', 'none')|list|length }}
+            </p>
+        </div>
+        <div>
+            <p class="text-gray-500 text-sm font-semibold uppercase">Returned</p>
+            <p class="text-3xl font-bold text-green-600 mt-1">
+                {{ borrower.loans|selectattr('returned_at', 'defined')|selectattr('returned_at')|list|length }}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Loan History -->
+<div class="bg-white rounded-lg shadow-lg p-8">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">📚 Loan History</h2>
+
+    {% if borrower.loans %}
+    <div class="space-y-4">
+        {% for loan in borrower.loans|sort(attribute='loaned_at', reverse=True) %}
+        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">
+                        <a href="/books/{{ loan.book.id }}" class="hover:text-indigo-600">
+                            {{ loan.book.title }}
+                        </a>
+                    </h3>
+                    <p class="text-gray-600 mb-3">by {{ loan.book.author }}</p>
+
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500 font-semibold">Loaned</p>
+                            <p class="text-gray-800">{{ loan.loaned_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 font-semibold">Due</p>
+                            <p class="text-gray-800">{{ loan.due_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 font-semibold">Status</p>
+                            {% if loan.returned_at %}
+                            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                ✓ Returned {{ loan.returned_at.strftime('%Y-%m-%d') }}
+                            </span>
+                            {% elif loan.is_overdue %}
+                            <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                                ⚠️ Overdue
+                            </span>
+                            {% else %}
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                                📖 Active
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if not loan.returned_at %}
+                <form method="post" action="/loans/{{ loan.id }}/return" class="ml-4">
+                    <button type="submit"
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        Return Book
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <p class="text-gray-500 text-lg mb-4">No loan history</p>
+        <a href="/loans/new?borrower_id={{ borrower.id }}" class="text-blue-600 hover:underline font-medium">
+            Create a loan for this borrower
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
