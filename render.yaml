@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: bookshare
+    env: python
+    buildCommand: "pip install -r requirements.txt && flask init-db"
+    startCommand: "gunicorn run:app"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bookshare-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+databases:
+  - name: bookshare-db
+    databaseName: bookshare
+    user: bookshare
