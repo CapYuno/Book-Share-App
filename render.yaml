@@ -13,8 +13,6 @@ services:
         fromDatabase:
           name: bookshare-db
           property: connectionString
-      - key: PYTHON_VERSION
-        value: 3.11.0
 
 databases:
   - name: bookshare-db
