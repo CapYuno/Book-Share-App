@@ -1,0 +1,53 @@
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Local database
+instance/
+*.db
+*.sqlite
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Development files
+.env
+.env.local
+*.log
+
+# Documentation and markdown files
+docs/
+*.md
+!README.md
+
+# Build and deployment files
+build.sh
+render.yaml
+runtime.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Migration files (run migrations manually in production)
+migrations/
+
+# Scripts
+scripts/
+
+# Seed data
+seed/

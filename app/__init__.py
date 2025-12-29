@@ -1,4 +1,5 @@
 """Application factory for BookShare Flask app."""
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -42,13 +43,16 @@ def create_app(config_name='default'):
     from app.utils import cli
     cli.register_commands(app)
     
-    # Initialize scheduler for reminders (only in non-testing environments)
-    if not app.config.get('TESTING', False):
+    # Initialize scheduler for reminders (only in non-testing and non-Vercel environments)
+    # Vercel's serverless functions don't support long-running background tasks
+    if not app.config.get('TESTING', False) and not os.getenv('VERCEL'):
         from app.utils.scheduler_config import init_scheduler
         init_scheduler(app)
     
-    # Create database tables
-    with app.app_context():
-        db.create_all()
+    # Create database tables (only for SQLite in development)
+    # For production/Vercel, use migrations instead
+    if app.config.get('SQLALCHEMY_DATABASE_URI', '').startswith('sqlite'):
+        with app.app_context():
+            db.create_all()
     
     return app
